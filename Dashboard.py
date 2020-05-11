@@ -1,7 +1,6 @@
 from urllib.request import urlopen
 import requests
 import json
-import json
 import pandas as pd
 import plotly.express as px
 import dash
