@@ -64,7 +64,7 @@ fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 # Create take the graph to the app
 
 app.layout = html.Div([
-    dcc.Graph(figure=fig,style={'height': '90vh', 'margin': '20px'})
+    dcc.Graph(figure=fig,style={'height': '95vh', 'margin': '20px'})
 ])
 
 if __name__ == '__main__':
