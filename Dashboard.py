@@ -32,6 +32,8 @@ th_province = pd.read_csv("Province_Name.csv")
 
 # Merge data and this is real used data
 data = pd.merge(th_province,data_covid19_sum, on='Province', how='left')
+data["PUI_sum"] = data["PUI_sum"].fillna(0).astype('int')
+
 
 # Remove Bangkok from data since it is the outlier
 data_no_outlier = data[data["Province"] != "Bangkok"]
