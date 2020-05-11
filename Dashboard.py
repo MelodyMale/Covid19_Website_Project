@@ -14,43 +14,44 @@ server = app.server
 
 # Preparing Data
 
-df = pd.read_csv("covid19-th-acc.csv")
-df.replace("กทม","กรุงเทพมหานคร", inplace=True)
+# Extract Data from API
+url = "https://covid19.th-stat.com/api/open/cases/sum"
+with requests.get(url) as response:
+    data = json.loads(response.text)
+    
+data_covid19_sum = pd.DataFrame.from_dict(data)
+data_covid19_sum.reset_index(inplace=True)
+data_covid19_sum = data_covid19_sum[["index", "Province"]]
 
-province_eng = pd.read_csv("Thailand_Province_Boundaries_2019.csv")
-province_eng = province_eng[["PROV_NAMT","PROV_NAME"]]
+col_name = {'Province': 'PUI_sum', 'index': 'Province'}
 
-df = df.set_index('Province')
+data_covid19_sum.rename(columns=col_name, inplace=True)
 
-province_eng = province_eng.set_index('PROV_NAMT')
+# Read province for merge with API Data
+th_province = pd.read_csv("Province_Name.csv")
 
-data = pd.concat([df,province_eng], axis=1, sort=False)
-data["Count_of_no"] = data["Count_of_no"].fillna(0)
-data["Count_of_no"] = data["Count_of_no"].astype('int')
-data["PROV_NAME"] = data["PROV_NAME"].str.lower().str.title()
+# Merge data and this is real used data
+data = pd.merge(th_province,data_covid19_sum, on='Province', how='left')
 
-data_no_outlier = data[data["PROV_NAME"] != "Bangkok"]
+# Remove Bangkok from data since it is the outlier
+data_no_outlier = data[data["Province"] != "Bangkok"]
 
 
 # Preparing map for ploting
+with open('thailand_map_data.json') as file:
+    thailand_map_data = json.load(file)
 
-with urlopen('https://raw.githubusercontent.com/apisit/thailand.json/master/thailandWithName.json') as response:
-    thailand_map_data = json.load(response)
 
-for index, v in enumerate(thailand_map_data["features"]):
-    if v["properties"]["name"] == "Bangkok Metropolis":
-        thailand_map_data["features"][index]["properties"]["name"] = "Bangkok"
-
-data_max = data_no_outlier["Count_of_no"].quantile(.95)
-
+# Set maximum data equal quatile 95
+data_max = data_no_outlier["PUI_sum"].quantile(.95)
 
 # Create the graph
-
-fig = px.choropleth_mapbox(data, geojson=thailand_map_data, color="Count_of_no",
-                    locations="PROV_NAME", featureidkey="properties.name",
+fig = px.choropleth_mapbox(data, geojson=thailand_map_data, color="PUI_sum",
+                    locations="Province", featureidkey="properties.name",
                     color_continuous_scale="Reds",
                     mapbox_style="carto-positron",
                     zoom=5, center = {"lat": 13.7367, "lon": 100.5231},
+                    opacity=0.8,
                     range_color = (1, data_max)
                    )
 
